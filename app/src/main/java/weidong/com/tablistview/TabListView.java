@@ -156,14 +156,16 @@ public class TabListView extends ListView implements AbsListView.OnScrollListene
                 //    Log.i("y","finals>>>>>>>>>>>>>>>>>>>>>>>>>>>="+finals);
                 //    Log.i("y","mCurrentPosition="+mCurrentPosition);
                 if (firstVisibleItemPosition == 0) {
-                    if (v < 0) {
-                        //   Log.i("y", "22222222222");
-                        mMHeaderView.setPadding(0, -mHeaderViewHeight, 0, 0);
-                        mCurrentPosition = -mHeaderViewHeight;
-                    } else {
-                        //    Log.i("y", "11111111111");
-                        mMHeaderView.setPadding(0, 0, 0, 0);
-                        mCurrentPosition = 0;
+                    if (Math.abs(difference)>20) {
+                        if (v < 0) {
+                            //   Log.i("y", "22222222222");
+                            mMHeaderView.setPadding(0, -mHeaderViewHeight, 0, 0);
+                            mCurrentPosition = -mHeaderViewHeight;
+                        } else {
+                            //    Log.i("y", "11111111111");
+                            mMHeaderView.setPadding(0, 0, 0, 0);
+                            mCurrentPosition = 0;
+                        }
                     }
                 }
 /*
