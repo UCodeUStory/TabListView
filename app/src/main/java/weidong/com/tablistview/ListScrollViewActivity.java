@@ -5,9 +5,11 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.RadioGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class ListScrollViewActivity extends AppCompatActivity {
 
@@ -49,6 +51,12 @@ public class ListScrollViewActivity extends AppCompatActivity {
             }
         });
 
+        listScrollView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Toast.makeText(ListScrollViewActivity.this,"position="+position,Toast.LENGTH_SHORT).show();
+            }
+        });
 
     }
 

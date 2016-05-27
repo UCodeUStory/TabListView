@@ -5,12 +5,15 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
+import android.view.VelocityTracker;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.widget.AbsListView;
 import android.widget.LinearLayout;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.RadioGroup;
+import android.widget.Scroller;
 
 /**
  * @ Author: qiyue (ustory)
@@ -28,7 +31,12 @@ public class TabListView extends ListView implements AbsListView.OnScrollListene
     private boolean isScrollToBottom ;
     private boolean isHeaderOnTouch = false;
     private OnTabChangeListener mOnTabChangeListener;
-
+    private VelocityTracker mVelocityTracker;
+    private float mVelocityX;
+    private float mVelocityY;
+    private int mMaxVelocity;
+    private int mPointerId;
+    private Scroller mScroller;
     public TabListView(Context context) {
         super(context);
         init(context);
@@ -45,7 +53,8 @@ public class TabListView extends ListView implements AbsListView.OnScrollListene
     }
 
     private void init(Context context){
-        // 获取LayoutInflater实例对象
+        mMaxVelocity = ViewConfiguration.get(context).getMaximumFlingVelocity();
+        mScroller = new Scroller(context);
         mInflater = (LayoutInflater) context.getSystemService(
                 Context.LAYOUT_INFLATER_SERVICE);
 
@@ -58,11 +67,10 @@ public class TabListView extends ListView implements AbsListView.OnScrollListene
                 mOnTabChangeListener.onChange(group,checkedId);
             }
         });
-       // mMHeaderView.setPadding(0,-300,0,0);
         mMHeaderView.measure(0, 0);
         mHeaderViewHeight = mMHeaderView.getMeasuredHeight();
 
-      //  mCurrentPosition = mHeaderViewHeight;
+        //  mCurrentPosition = mHeaderViewHeight;
         Log.i("qiyue","mHeaderViewHeight="+mHeaderViewHeight);
         mMHeaderView.setOnClickListener(new OnClickListener() {
             @Override
@@ -91,57 +99,119 @@ public class TabListView extends ListView implements AbsListView.OnScrollListene
 
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
-            Log.i("qiyue","onTouchEvent");
-            switch (ev.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    downY = ev.getY();
+        Log.i("qiyue","onTouchEvent");
+        acquireVelocityTracker(ev);
+        switch (ev.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                downY = ev.getY();
+                mPointerId = ev.getPointerId(0);
+                Log.i("qiyue","downY="+ev.getY());
+                break;
+            case MotionEvent.ACTION_MOVE:
+                float currentY = ev.getY();
 
-                    Log.i("qiyue","downY="+ev.getY());
-                    break;
-                case MotionEvent.ACTION_MOVE:
-                    float currentY = ev.getY();
-                    difference = (currentY - downY) /3;
-                    int distance = (int)difference;
-                    if (distance>0){
-                        difference = 50;
-                    }else if(distance<0){
-                        difference = -50;
+
+                mVelocityTracker.computeCurrentVelocity(1000, mMaxVelocity);
+                mVelocityX = mVelocityTracker.getXVelocity(mPointerId);
+                mVelocityY = mVelocityTracker.getYVelocity(mPointerId);
+
+                difference = (currentY - downY) /3;
+                int distance = (int)difference;
+                Log.i("qiyue","difference="+difference);
+                if (firstVisibleItemPosition == 0) {
+                    mCurrentPosition = mCurrentPosition + (int) difference;
+                    if (mCurrentPosition<-mHeaderViewHeight){
+                        mCurrentPosition =-mHeaderViewHeight;
                     }
-                 /*   if (isHeaderOnTouch){
-                        isHeaderOnTouch = false;
+                    if (mCurrentPosition>0){
+                        mCurrentPosition =0;
+                    }
+
+                    Log.i("qiyue", "mCurrentPosition3=" + mCurrentPosition);
+                    mMHeaderView.setPadding(0, mCurrentPosition, 0, 0);
+                    if (mCurrentPosition==-mHeaderViewHeight) {
+                        //   Log.i("qiyue","false");
+                        //  return false;
+                    }else{
+                        //   Log.i("qiyue","true");
                         return true;
-                    }*/
-                    Log.i("qiyue","difference="+difference);
-                    if (firstVisibleItemPosition == 0) {
-                        mCurrentPosition = mCurrentPosition + (int) difference;
-                        if (mCurrentPosition<-mHeaderViewHeight){
-                            mCurrentPosition =-mHeaderViewHeight;
-                        }
-                        if (mCurrentPosition>0){
-                            mCurrentPosition =0;
-                        }
-
-                        Log.i("qiyue", "mCurrentPosition3=" + mCurrentPosition);
-                        mMHeaderView.setPadding(0, mCurrentPosition, 0, 0);
-                        if (mCurrentPosition==-mHeaderViewHeight) {
-                            Log.i("qiyue","false");
-                          //  return false;
-                        }else{
-                            Log.i("qiyue","true");
-                            return true;
-                        }
                     }
+                }
 
 
-                    break;
-                case MotionEvent.ACTION_UP:
+                break;
+            case MotionEvent.ACTION_UP:
+                float s = 0f;
+                float v = mVelocityY;
+                int t = 0;
+                int a = 1000;
+                int finals = 0;
+                if (v>0) {
+                    s = -((v * v) / (2 * a));
+                }else if (v<0){
+                    s = (v * v) / (2 * a);
+                }
+                finals = (int)s;
 
-                    break;
-                default:
-                    break;
-            }
+                //    Log.i("y","finals>>>>>>>>>>>>>>>>>>>>>>>>>>>="+finals);
+                //    Log.i("y","mCurrentPosition="+mCurrentPosition);
+                if (firstVisibleItemPosition == 0) {
+                    if (v < 0) {
+                        //   Log.i("y", "22222222222");
+                        mMHeaderView.setPadding(0, -mHeaderViewHeight, 0, 0);
+                        mCurrentPosition = -mHeaderViewHeight;
+                    } else {
+                        //    Log.i("y", "11111111111");
+                        mMHeaderView.setPadding(0, 0, 0, 0);
+                        mCurrentPosition = 0;
+                    }
+                }
+/*
+                        if (firstVisibleItemPosition == 0) {
+                            //  smoothScrollBy(0, 50);
+                            final ValueAnimator valueAnimator = ValueAnimator
+                                    .ofInt(finals, 0);
+                            valueAnimator.setDuration(500);
+                            valueAnimator.setTarget(mMHeaderView);
+                            valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                                @Override
+                                public void onAnimationUpdate(ValueAnimator animation) {
+                                    int paddingTop = mCurrentPosition + (int) animation.getAnimatedValue();
+                                   // if (Math.abs(paddingTop)<Math.abs(mHeaderViewHeight)) {
+                                        mMHeaderView.setPadding(0, mCurrentPosition + (int) animation.getAnimatedValue(), 0, 0);
+                                 //   }else{
+                                     *//*   if (paddingTop>0) {
+                                            mMHeaderView.setPadding(0, mHeaderViewHeight, 0, 0);
+                                        }else{
+                                            mMHeaderView.setPadding(0,-mHeaderViewHeight, 0, 0);
+                                        }
+                                    }*//*
+                                }
+                            });
+                            valueAnimator.start();*/
+                //   }
+                // }
+                break;
+            default:
+                break;
+        }
 
         return super.onTouchEvent(ev);
+    }
+
+    //调用此方法设置滚动的相对偏移
+    public void smoothScrollBy(int dx, int dy) {
+
+        //设置mScroller的滚动偏移量
+        mScroller.startScroll(mScroller.getFinalX(), mScroller.getFinalY(), dx, dy);
+        invalidate();//这里必须调用invalidate()才能保证computeScroll()会被调用，否则不一定会刷新界面，看不到滚动效果
+    }
+
+    private void acquireVelocityTracker(final MotionEvent event) {
+        if(null == mVelocityTracker) {
+            mVelocityTracker = VelocityTracker.obtain();
+        }
+        mVelocityTracker.addMovement(event);
     }
 
     public void setScrollPosition(int position){
@@ -212,5 +282,21 @@ public class TabListView extends ListView implements AbsListView.OnScrollListene
         Log.i("qiyue",">>>>>>>>>>>="+mCurrentPosition);
         mMHeaderView.setPadding(0, mCurrentPosition, 0, 0);
         super.setAdapter(adapter);
+    }
+
+
+    @Override
+    public void computeScroll() {
+
+        //先判断mScroller滚动是否完成
+        if (mScroller.computeScrollOffset()) {
+
+            //这里调用View的scrollTo()完成实际的滚动
+            scrollTo(mScroller.getCurrX(), mScroller.getCurrY());
+
+            //必须调用该方法，否则不一定能看到滚动效果
+            postInvalidate();
+        }
+        super.computeScroll();
     }
 }
